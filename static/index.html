@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Roof Rust Classification System</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      color: #1f2937;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      margin-bottom: 10px;
+      font-size: 2rem;
+    }
+
+    .header p {
+      color: #6b7280;
+      margin: 0;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      padding: 24px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .upload-preview-box {
+      border: 2px dashed #d1d5db;
+      border-radius: 16px;
+      padding: 20px;
+      background: #fafafa;
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .upload-placeholder {
+      text-align: center;
+    }
+
+    .upload-placeholder p {
+      margin-bottom: 16px;
+      font-size: 16px;
+      color: #374151;
+    }
+
+    .upload-placeholder input {
+      margin-top: 8px;
+    }
+
+    .preview-image {
+      display: none;
+      max-width: 100%;
+      max-height: 380px;
+      object-fit: contain;
+      border-radius: 12px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: #c55a11;
+      color: white;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      margin-bottom: 14px;
+      font-weight: bold;
+    }
+
+    .result-badge {
+      display: inline-block;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+
+    .badge-no-rust {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .badge-slight {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .badge-visible {
+      background: #fde68a;
+      color: #9a3412;
+    }
+
+    .badge-heavy {
+      background: #fecaca;
+      color: #991b1b;
+    }
+
+    .info-box {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .confidence {
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin-bottom: 16px;
+    }
+
+    .bar-row {
+      margin-bottom: 14px;
+    }
+
+    .bar-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .bar {
+      width: 100%;
+      height: 12px;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #c55a11, #e88a3d);
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .error {
+      margin-top: 16px;
+      color: #b91c1c;
+      font-weight: bold;
+    }
+
+    .warning {
+      margin-bottom: 16px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #fff7ed;
+      color: #9a3412;
+      border: 1px solid #fdba74;
+      display: none;
+    }
+
+    .recommendation-list {
+      margin: 10px 0 0 18px;
+      padding: 0;
+    }
+
+    .recommendation-list li {
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Roof Rust Classification System</h1>
+      <p>Upload a roof image to identify rust severity, confidence level, and maintenance recommendation.</p>
+    </div>
+
+    <div class="card layout">
+      <div>
+        <div class="section-title">Upload Image</div>
+
+        <div class="upload-preview-box" id="upload-box">
+          <div class="upload-placeholder" id="upload-placeholder">
+            <p>Select a clear roof image for analysis.</p>
+            <input type="file" id="file-input" accept="image/*" />
+          </div>
+
+          <img id="preview-image" class="preview-image" alt="Preview Image" />
+        </div>
+
+        <div class="button-group">
+          <button class="btn-primary" id="predict-btn">Analyze Image</button>
+          <button class="btn-secondary" id="clear-btn">Clear</button>
+        </div>
+
+        <div class="error" id="error"></div>
+      </div>
+
+      <div>
+        <div class="section-title">Analysis Result</div>
+
+        <div class="warning" id="warning-box"></div>
+
+        <div id="result-section" style="display:none;">
+          <div id="final-badge" class="result-badge"></div>
+          <div class="confidence" id="confidence-text"></div>
+
+          <div class="info-box">
+            <strong>Roof Validation</strong>
+            <p id="roof-validation"></p>
+          </div>
+
+          <div class="info-box">
+            <strong>ISO 8501-1 Basis</strong>
+            <p id="iso-basis"></p>
+          </div>
+
+          <div class="info-box">
+            <strong>Recommendation</strong>
+            <ul id="recommendation-list" class="recommendation-list"></ul>
+          </div>
+
+          <div class="section-title">Class Probabilities</div>
+          <div id="bars"></div>
+        </div>
+
+        <div id="empty-state">
+          <p style="color:#6b7280;">No analysis yet. Upload an image and click <strong>Analyze Image</strong>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById("file-input");
+    const previewImage = document.getElementById("preview-image");
+    const uploadPlaceholder = document.getElementById("upload-placeholder");
+    const predictBtn = document.getElementById("predict-btn");
+    const clearBtn = document.getElementById("clear-btn");
+    const errorDiv = document.getElementById("error");
+    const warningBox = document.getElementById("warning-box");
+
+    const resultSection = document.getElementById("result-section");
+    const emptyState = document.getElementById("empty-state");
+    const finalBadge = document.getElementById("final-badge");
+    const confidenceText = document.getElementById("confidence-text");
+    const roofValidation = document.getElementById("roof-validation");
+    const isoBasis = document.getElementById("iso-basis");
+    const recommendationList = document.getElementById("recommendation-list");
+    const bars = document.getElementById("bars");
+
+    const DISPLAY_ORDER = [
+      "No Rust",
+      "Slightly Visible Rust",
+      "Visible Rust",
+      "Heavy Visible Rust"
+    ];
+
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        previewImage.src = e.target.result;
+        previewImage.style.display = "block";
+        uploadPlaceholder.style.display = "none";
+      };
+      reader.readAsDataURL(file);
+
+      errorDiv.textContent = "";
+      warningBox.style.display = "none";
+      warningBox.textContent = "";
+    });
+
+    clearBtn.addEventListener("click", () => {
+      fileInput.value = "";
+      previewImage.src = "";
+      previewImage.style.display = "none";
+      uploadPlaceholder.style.display = "block";
+
+      errorDiv.textContent = "";
+      warningBox.style.display = "none";
+      warningBox.textContent = "";
+
+      resultSection.style.display = "none";
+      emptyState.style.display = "block";
+      bars.innerHTML = "";
+      recommendationList.innerHTML = "";
+      finalBadge.className = "result-badge";
+      finalBadge.textContent = "";
+      confidenceText.textContent = "";
+      roofValidation.textContent = "";
+      isoBasis.textContent = "";
+    });
+
+    predictBtn.addEventListener("click", async () => {
+      const file = fileInput.files[0];
+
+      if (!file) {
+        errorDiv.textContent = "Please choose an image first.";
+        return;
+      }
+
+      errorDiv.textContent = "Running prediction...";
+      warningBox.style.display = "none";
+      warningBox.textContent = "";
+      resultSection.style.display = "none";
+      emptyState.style.display = "block";
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const response = await fetch("/predict", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          let extra = "";
+          if (data.roof_filter_prediction !== undefined && data.roof_filter_confidence !== undefined) {
+            extra = ` (Roof filter: ${data.roof_filter_prediction}, ${data.roof_filter_confidence.toFixed(2)}%)`;
+          }
+          errorDiv.textContent = `Error: ${data.error || "Unknown error"}${extra}`;
+          resultSection.style.display = "none";
+          emptyState.style.display = "block";
+          return;
+        }
+
+        errorDiv.textContent = "";
+        emptyState.style.display = "none";
+        resultSection.style.display = "block";
+
+        if (data.low_confidence && data.warning) {
+          warningBox.textContent = data.warning;
+          warningBox.style.display = "block";
+        } else {
+          warningBox.style.display = "none";
+          warningBox.textContent = "";
+        }
+
+        const finalClass = data.final_classification;
+        const confidence = data.confidence;
+        const predictions = data.predictions;
+
+        finalBadge.textContent = finalClass;
+        finalBadge.className = "result-badge";
+
+        if (finalClass === "No Rust") {
+          finalBadge.classList.add("badge-no-rust");
+        } else if (finalClass === "Slightly Visible Rust") {
+          finalBadge.classList.add("badge-slight");
+        } else if (finalClass === "Visible Rust") {
+          finalBadge.classList.add("badge-visible");
+        } else if (finalClass === "Heavy Visible Rust") {
+          finalBadge.classList.add("badge-heavy");
+        }
+
+        confidenceText.textContent = `Rust Confidence: ${confidence.toFixed(2)}%`;
+        roofValidation.textContent = `Detected as roof (${data.roof_filter_prediction}) with ${data.roof_filter_confidence.toFixed(2)}% confidence.`;
+        isoBasis.textContent = data.iso_basis;
+
+        recommendationList.innerHTML = "";
+        data.recommendation.forEach((item) => {
+          const li = document.createElement("li");
+          li.textContent = item;
+          recommendationList.appendChild(li);
+        });
+
+        bars.innerHTML = "";
+
+        DISPLAY_ORDER.forEach((label) => {
+          const percent = ((predictions[label] || 0) * 100).toFixed(2);
+
+          const row = document.createElement("div");
+          row.className = "bar-row";
+
+          row.innerHTML = `
+            <div class="bar-label">
+              <span>${label}</span>
+              <span>${percent}%</span>
+            </div>
+            <div class="bar">
+              <div class="bar-fill" style="width: ${percent}%"></div>
+            </div>
+          `;
+
+          bars.appendChild(row);
+        });
+      } catch (err) {
+        errorDiv.textContent = `Error: ${err.message}`;
+        resultSection.style.display = "none";
+        emptyState.style.display = "block";
+      }
+    });
+  </script>
+</body>
+</html>
